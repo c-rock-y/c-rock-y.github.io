@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+
+
+
+
+
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 3.9.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.4.1">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.4.1">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.4.1">
+  <link rel="mask-icon" href="/images/logo.svg?v=7.4.1" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Rocky's Blog" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css?v=7.4.1">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.4.1',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="Elastic基本概念文档的 CURD 与基本操作   操作 例子    Index PUT myindex/_doc/1   &quot;comment&quot;:&quot;test&quot; &amp;#125;```|123456789101112131415161718192021|Create|PUT myindex/_create/1 （指定id） &amp;lt;br /&amp;gt; ```&amp;#123;&amp;quot;user&amp;quot;:">
+<meta name="keywords" content="laravel, php, swoole, 效率， 算法">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Rocky&#39;s Blog">
+<meta property="og:url" content="https://crock-y.github.io/2019/10/20/文档的crud 和批量操作/index.html">
+<meta property="og:site_name" content="Rocky&#39;s Blog">
+<meta property="og:description" content="Elastic基本概念文档的 CURD 与基本操作   操作 例子    Index PUT myindex/_doc/1   &quot;comment&quot;:&quot;test&quot; &amp;#125;```|123456789101112131415161718192021|Create|PUT myindex/_create/1 （指定id） &amp;lt;br /&amp;gt; ```&amp;#123;&amp;quot;user&amp;quot;:">
+<meta property="og:locale" content="en">
+<meta property="og:updated_time" content="2019-08-15T19:44:45.797Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Rocky&#39;s Blog">
+<meta name="twitter:description" content="Elastic基本概念文档的 CURD 与基本操作   操作 例子    Index PUT myindex/_doc/1   &quot;comment&quot;:&quot;test&quot; &amp;#125;```|123456789101112131415161718192021|Create|PUT myindex/_create/1 （指定id） &amp;lt;br /&amp;gt; ```&amp;#123;&amp;quot;user&amp;quot;:">
+  <link rel="canonical" href="https://crock-y.github.io/2019/10/20/文档的crud 和批量操作/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title> | Rocky's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Rocky's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <h1 class="site-subtitle" itemprop="description">Rocky's Blog,</h1>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+      
+      
+        
+        
+        <li class="menu-item menu-item-home">
+      
+    
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+      
+    
+      
+      
+        
+        
+        <li class="menu-item menu-item-tags">
+      
+    
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      
+    
+      
+      
+        
+        
+        <li class="menu-item menu-item-categories">
+      
+    
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+      
+    
+      
+      
+        
+        
+        <li class="menu-item menu-item-about">
+      
+    
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+      
+    
+      
+      
+        
+        
+        <li class="menu-item menu-item-schedule">
+      
+    
+
+    <a href="/schedule/" rel="section"><i class="fa fa-fw fa-calendar"></i>Schedule</a>
+
+  </li>
+      
+    
+      
+      
+        
+        
+        <li class="menu-item menu-item-sitemap">
+      
+    
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-fw fa-sitemap"></i>Sitemap</a>
+
+  </li>
+      
+    
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+            
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="https://crock-y.github.io/2019/10/20/文档的crud 和批量操作/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Rocky">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Rocky's Blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            
+            
+
+          
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              
+                
+              
+
+              <time title="Created: 2019-10-20 17:14:12" itemprop="dateCreated datePublished" datetime="2019-10-20T17:14:12+08:00">2019-10-20</time>
+            </span>
+          
+            
+
+            
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-08-16 03:44:45" itemprop="dateModified" datetime="2019-08-16T03:44:45+08:00">2019-08-16</time>
+              </span>
+            
+          
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="Elastic"><a href="#Elastic" class="headerlink" title="Elastic"></a>Elastic</h1><h2 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a>基本概念</h2><h3 id="文档的-CURD-与基本操作"><a href="#文档的-CURD-与基本操作" class="headerlink" title="文档的 CURD 与基本操作"></a>文档的 CURD 与基本操作</h3><table>
+<thead>
+<tr>
+<th>操作</th>
+<th>例子</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Index</td>
+<td>PUT myindex/_doc/1  <br> <figure class="highlight plain"><figcaption><span>"comment":"test" &#125;```|</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">|Create|PUT myindex/_create/1 （指定id） &lt;br /&gt; ```&#123;&quot;user&quot;:&quot;Mike&quot;, &quot;comment&quot;:&quot;You know ,for search&quot; &#125;``` &lt;br /&gt; POST myindex/_doc （不指定id，自动生成） &lt;br /&gt; ```&#123;&quot;user&quot;:&quot;Mike&quot;, &quot;comment&quot;:&quot;You know ,for search&quot; &#125;```|</span><br><span class="line">|Read|GET myindex/_doc/1|</span><br><span class="line">|Update|POST myindex/_update/1  &lt;br /&gt; ```&#123;&quot;doc&quot;:&#123;&quot;user&quot;:&quot;Mike&quot;, &quot;comment&quot;:&quot;You know ,for search&quot; &#125;&#125;```|</span><br><span class="line">|Delete|DELETE myindex/_doc/1|</span><br><span class="line"></span><br><span class="line">&gt; ps: </span><br><span class="line">&gt; 1. Type名，约定都用_doc</span><br><span class="line">&gt; 2. Create - 如果ID 已经存在了，会创建失败</span><br><span class="line">&gt; 3. Index - 如果 id 存在，删除原来的文档， 创建新的稳定文档，版本增加</span><br><span class="line">&gt; 4. Update - 文档必须已经存在，更新只会对相应字段做增量修改</span><br><span class="line"></span><br><span class="line">#### Create </span><br><span class="line"></span><br><span class="line">创建一个文档，支持自动生成id和指定id两种方式</span><br><span class="line">```bash</span><br><span class="line">#指定id</span><br><span class="line">PUT myindex/_create/1 </span><br><span class="line">&#123;&quot;user&quot;:&quot;Mike&quot;, &quot;comment&quot;:&quot;You know ,for search&quot; &#125;</span><br><span class="line">#自动生成id</span><br><span class="line">POST myindex/_doc</span><br><span class="line">&#123;&quot;user&quot;:&quot;Mike&quot;, &quot;comment&quot;:&quot;You know ,for search&quot; &#125;</span><br></pre></td></tr></table></figure></td>
+</tr>
+</tbody></table>
+<p>使用 PUT 方式时， 如该id已经存在则创建失败</p>
+<h4 id="GET"><a href="#GET" class="headerlink" title="GET"></a>GET</h4><p>获取一个文档 元信息 </p>
+<p><code>GET users/_doc/1</code></p>
+<ol>
+<li>版本信息，同一个id 的文档，即使被删除，Version号也会不断增加。</li>
+<li>找不到返回404</li>
+</ol>
+<h4 id="Index"><a href="#Index" class="headerlink" title="Index"></a>Index</h4><p>索引一个文档</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">PUT users/_doc/1</span><br><span class="line">&#123;</span><br><span class="line">    <span class="string">"tags"</span>[<span class="string">"guitar"</span>,<span class="string">"skateboard"</span>,<span class="string">"reading"</span>]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Index 和 Create 不一样的地方：如果文档不存在，就索引新的文档，如果不存在，Index 则会把现有文档会被删除，然后索引新的文档，版本信息 +1 ，Create 则会失败</p>
+<h4 id="update"><a href="#update" class="headerlink" title="update"></a>update</h4><p>修改文档：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">POST user/_update/1</span><br><span class="line">&#123;</span><br><span class="line">    <span class="string">"doc"</span>: &#123;</span><br><span class="line">        <span class="string">"albums"</span>: [<span class="string">"Album1"</span>, <span class="string">"Alumb2"</span>]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>update 方法不会删除原来的文档，而是实现真正的数据更新</li>
+<li>Post 方法 / payload 需要包含在 “doc” 中</li>
+</ol>
+<h3 id="Bulk-Api"><a href="#Bulk-Api" class="headerlink" title="Bulk Api"></a>Bulk Api</h3><p>支持在一次api请求中，对不同的索引进行操作</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br></pre></td><td class="code"><pre><span class="line">POST _bulk</span><br><span class="line">&#123;<span class="string">"index"</span>:&#123;<span class="string">"_index"</span>: <span class="string">"test"</span>,<span class="string">"_id"</span>:1&#125;&#125;</span><br><span class="line">&#123;<span class="string">"field1"</span>: <span class="string">"value1"</span>&#125;</span><br><span class="line">&#123;<span class="string">"delete"</span>:&#123;<span class="string">"_index"</span>: <span class="string">"test"</span>,<span class="string">"_id"</span>:2&#125;&#125;</span><br><span class="line">&#123;<span class="string">"create"</span>:&#123;<span class="string">"_index"</span>: <span class="string">"test2"</span>,<span class="string">"_id"</span>:3&#125;&#125;</span><br><span class="line">&#123;<span class="string">"field1"</span>: <span class="string">"value3"</span>&#125;</span><br><span class="line">&#123;<span class="string">"create"</span>:&#123;<span class="string">"_id"</span>: <span class="string">"1"</span>,<span class="string">"_index"</span>:<span class="string">"test"</span>&#125;&#125;</span><br><span class="line">&#123;<span class="string">"doc"</span>:&#123;<span class="string">"field1"</span>: <span class="string">"value3"</span>&#125;&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">#返回结果</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">"took"</span> : 791,</span><br><span class="line">  <span class="string">"errors"</span> : <span class="literal">true</span>,</span><br><span class="line">  <span class="string">"items"</span> : [</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="string">"index"</span> : &#123;</span><br><span class="line">        <span class="string">"_index"</span> : <span class="string">"test"</span>,</span><br><span class="line">        <span class="string">"_type"</span> : <span class="string">"_doc"</span>,</span><br><span class="line">        <span class="string">"_id"</span> : <span class="string">"1"</span>,</span><br><span class="line">        <span class="string">"_version"</span> : 1,</span><br><span class="line">        <span class="string">"result"</span> : <span class="string">"created"</span>,</span><br><span class="line">        <span class="string">"_shards"</span> : &#123;</span><br><span class="line">          <span class="string">"total"</span> : 2,</span><br><span class="line">          <span class="string">"successful"</span> : 2,</span><br><span class="line">          <span class="string">"failed"</span> : 0</span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="string">"_seq_no"</span> : 0,</span><br><span class="line">        <span class="string">"_primary_term"</span> : 1,</span><br><span class="line">        <span class="string">"status"</span> : 201</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="string">"delete"</span> : &#123;</span><br><span class="line">        <span class="string">"_index"</span> : <span class="string">"test"</span>,</span><br><span class="line">        <span class="string">"_type"</span> : <span class="string">"_doc"</span>,</span><br><span class="line">        <span class="string">"_id"</span> : <span class="string">"2"</span>,</span><br><span class="line">        <span class="string">"_version"</span> : 1,</span><br><span class="line">        <span class="string">"result"</span> : <span class="string">"not_found"</span>,</span><br><span class="line">        <span class="string">"_shards"</span> : &#123;</span><br><span class="line">          <span class="string">"total"</span> : 2,</span><br><span class="line">          <span class="string">"successful"</span> : 2,</span><br><span class="line">          <span class="string">"failed"</span> : 0</span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="string">"_seq_no"</span> : 1,</span><br><span class="line">        <span class="string">"_primary_term"</span> : 1,</span><br><span class="line">        <span class="string">"status"</span> : 404</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="string">"create"</span> : &#123;</span><br><span class="line">        <span class="string">"_index"</span> : <span class="string">"test2"</span>,</span><br><span class="line">        <span class="string">"_type"</span> : <span class="string">"_doc"</span>,</span><br><span class="line">        <span class="string">"_id"</span> : <span class="string">"3"</span>,</span><br><span class="line">        <span class="string">"_version"</span> : 1,</span><br><span class="line">        <span class="string">"result"</span> : <span class="string">"created"</span>,</span><br><span class="line">        <span class="string">"_shards"</span> : &#123;</span><br><span class="line">          <span class="string">"total"</span> : 2,</span><br><span class="line">          <span class="string">"successful"</span> : 1,</span><br><span class="line">          <span class="string">"failed"</span> : 0</span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="string">"_seq_no"</span> : 0,</span><br><span class="line">        <span class="string">"_primary_term"</span> : 1,</span><br><span class="line">        <span class="string">"status"</span> : 201</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="string">"create"</span> : &#123;</span><br><span class="line">        <span class="string">"_index"</span> : <span class="string">"test"</span>,</span><br><span class="line">        <span class="string">"_type"</span> : <span class="string">"_doc"</span>,</span><br><span class="line">        <span class="string">"_id"</span> : <span class="string">"1"</span>,</span><br><span class="line">        <span class="string">"status"</span> : 409,</span><br><span class="line">        <span class="string">"error"</span> : &#123;</span><br><span class="line">          <span class="string">"type"</span> : <span class="string">"version_conflict_engine_exception"</span>,</span><br><span class="line">          <span class="string">"reason"</span> : <span class="string">"[1]: version conflict, document already exists (current version [1])"</span>,</span><br><span class="line">          <span class="string">"index_uuid"</span> : <span class="string">"6ISR2UtZRmevQLvGnV2HRw"</span>,</span><br><span class="line">          <span class="string">"shard"</span> : <span class="string">"0"</span>,</span><br><span class="line">          <span class="string">"index"</span> : <span class="string">"test"</span></span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Bulk Api 支持4中类型操作（Index，Create，Update，Delete），index 可以在 url 中指定， 也可以在Payload 中指定</p>
+<h3 id="mget"><a href="#mget" class="headerlink" title="mget"></a>mget</h3><p>批量读取 ，可以减少网络链接带来的开销，提高性能</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">GET _mget</span><br><span class="line">&#123;</span><br><span class="line">    <span class="string">"docs"</span>[</span><br><span class="line">        &#123;</span><br><span class="line">        <span class="string">"_index"</span>:<span class="string">"user"</span>,</span><br><span class="line">        <span class="string">"_id"</span>:1</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">"_index"</span>:<span class="string">"comment"</span>,</span><br><span class="line">        <span class="string">"_id"</span>:1</span><br><span class="line">    &#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">#返回两个不同索引的文档</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="msearch"><a href="#msearch" class="headerlink" title="msearch"></a>msearch</h3><p>批量查询</p>
+
+    </div>
+
+    
+    
+    
+        
+      
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+              
+                <a href="/2019/10/20/Search Api/" rel="next" title="">
+                  <i class="fa fa-chevron-left"></i> 
+                </a>
+              
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+              
+                <a href="/2019/10/20/多字段特性以及Mapping中配置自定义Analyzer/" rel="prev" title="">
+                   <i class="fa fa-chevron-right"></i>
+                </a>
+              
+            </div>
+          </div>
+        
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+        
+        
+        
+        
+      
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Elastic"><span class="nav-number">1.</span> <span class="nav-text">Elastic</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#基本概念"><span class="nav-number">1.1.</span> <span class="nav-text">基本概念</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#文档的-CURD-与基本操作"><span class="nav-number">1.1.1.</span> <span class="nav-text">文档的 CURD 与基本操作</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#GET"><span class="nav-number">1.1.1.1.</span> <span class="nav-text">GET</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Index"><span class="nav-number">1.1.1.2.</span> <span class="nav-text">Index</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#update"><span class="nav-number">1.1.1.3.</span> <span class="nav-text">update</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Bulk-Api"><span class="nav-number">1.1.2.</span> <span class="nav-text">Bulk Api</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mget"><span class="nav-number">1.1.3.</span> <span class="nav-text">mget</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#msearch"><span class="nav-number">1.1.4.</span> <span class="nav-text">msearch</span></a></li></ol></li></ol></li></ol></div>
+        
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Rocky</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        
+          <a href="/archives">
+        
+          <span class="site-state-item-count">12</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+    
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+<div class="copyright">
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Rocky</span>
+</div>
+
+<div class="powered-by">
+<i class="fa fa-user-md"></i><span id="busuanzi_container_site_uv">
+  本站访客数:<span id="busuanzi_value_site_uv"></span>
+</span>
+</div>
+
+<span class="post-meta-divider">|</span>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.9.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">
+      
+    Theme – <a href="https://pisces.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> v7.4.1
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js?v=3.1.0"></script>
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+<script src="/js/utils.js?v=7.4.1"></script><script src="/js/motion.js?v=7.4.1"></script>
+<script src="/js/schemes/pisces.js?v=7.4.1"></script>
+<script src="/js/next-boot.js?v=7.4.1"></script>
+
+
+
+  
+  <script>
+    (function(){
+      var bp = document.createElement('script');
+      var curProtocol = window.location.protocol.split(':')[0];
+      bp.src = (curProtocol === 'https') ? 'https://zz.bdstatic.com/linksubmit/push.js' : 'http://push.zhanzhang.baidu.com/push.js';
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(bp, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

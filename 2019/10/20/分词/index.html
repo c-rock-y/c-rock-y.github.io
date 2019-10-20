@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+
+
+
+
+
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 3.9.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.4.1">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.4.1">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.4.1">
+  <link rel="mask-icon" href="/images/logo.svg?v=7.4.1" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Rocky's Blog" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css?v=7.4.1">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.4.1',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="分词什么是分词Analysis 也叫分词，就是将文本转换成一系列单词的过程。 Analysis 与 Analyzer Analysis –  文本分析是吧全文本转换成一系列单词（term/token）的过程，也叫分词 Analysis 是通过 analyzer来实现的 可以使用 elasticsearch 内置的分析器、或按需求定制化分析器   除了在数据写入时转换词条，匹配 Query 语句时候">
+<meta name="keywords" content="laravel, php, swoole, 效率， 算法">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Rocky&#39;s Blog">
+<meta property="og:url" content="https://crock-y.github.io/2019/10/20/分词/index.html">
+<meta property="og:site_name" content="Rocky&#39;s Blog">
+<meta property="og:description" content="分词什么是分词Analysis 也叫分词，就是将文本转换成一系列单词的过程。 Analysis 与 Analyzer Analysis –  文本分析是吧全文本转换成一系列单词（term/token）的过程，也叫分词 Analysis 是通过 analyzer来实现的 可以使用 elasticsearch 内置的分析器、或按需求定制化分析器   除了在数据写入时转换词条，匹配 Query 语句时候">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="https://crock-y.github.io/2019/10/20/image/Analyzer.PNG">
+<meta property="og:updated_time" content="2019-08-05T14:53:13.610Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Rocky&#39;s Blog">
+<meta name="twitter:description" content="分词什么是分词Analysis 也叫分词，就是将文本转换成一系列单词的过程。 Analysis 与 Analyzer Analysis –  文本分析是吧全文本转换成一系列单词（term/token）的过程，也叫分词 Analysis 是通过 analyzer来实现的 可以使用 elasticsearch 内置的分析器、或按需求定制化分析器   除了在数据写入时转换词条，匹配 Query 语句时候">
+<meta name="twitter:image" content="https://crock-y.github.io/2019/10/20/image/Analyzer.PNG">
+  <link rel="canonical" href="https://crock-y.github.io/2019/10/20/分词/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title> | Rocky's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Rocky's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <h1 class="site-subtitle" itemprop="description">Rocky's Blog,</h1>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+      
+      
+        
+        
+        <li class="menu-item menu-item-home">
+      
+    
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+      
+    
+      
+      
+        
+        
+        <li class="menu-item menu-item-tags">
+      
+    
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      
+    
+      
+      
+        
+        
+        <li class="menu-item menu-item-categories">
+      
+    
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+      
+    
+      
+      
+        
+        
+        <li class="menu-item menu-item-about">
+      
+    
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+      
+    
+      
+      
+        
+        
+        <li class="menu-item menu-item-schedule">
+      
+    
+
+    <a href="/schedule/" rel="section"><i class="fa fa-fw fa-calendar"></i>Schedule</a>
+
+  </li>
+      
+    
+      
+      
+        
+        
+        <li class="menu-item menu-item-sitemap">
+      
+    
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-fw fa-sitemap"></i>Sitemap</a>
+
+  </li>
+      
+    
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+            
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="https://crock-y.github.io/2019/10/20/分词/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Rocky">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Rocky's Blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            
+            
+
+          
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              
+                
+              
+
+              <time title="Created: 2019-10-20 17:14:12" itemprop="dateCreated datePublished" datetime="2019-10-20T17:14:12+08:00">2019-10-20</time>
+            </span>
+          
+            
+
+            
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-08-05 22:53:13" itemprop="dateModified" datetime="2019-08-05T22:53:13+08:00">2019-08-05</time>
+              </span>
+            
+          
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="分词"><a href="#分词" class="headerlink" title="分词"></a>分词</h3><h4 id="什么是分词"><a href="#什么是分词" class="headerlink" title="什么是分词"></a>什么是分词</h4><p>Analysis 也叫分词，就是将文本转换成一系列单词的过程。</p>
+<h5 id="Analysis-与-Analyzer"><a href="#Analysis-与-Analyzer" class="headerlink" title="Analysis 与 Analyzer"></a>Analysis 与 Analyzer</h5><ul>
+<li>Analysis –  文本分析是吧全文本转换成一系列单词（term/token）的过程，也叫分词</li>
+<li>Analysis 是通过 analyzer来实现的<ul>
+<li>可以使用 elasticsearch 内置的分析器、或按需求定制化分析器</li>
+</ul>
+</li>
+<li>除了在数据写入时转换词条，匹配 Query 语句时候也需要相同的分析器对查询语句进行分析</li>
+</ul>
+<h4 id="Analyzer-的组成与工作机制"><a href="#Analyzer-的组成与工作机制" class="headerlink" title="Analyzer 的组成与工作机制"></a>Analyzer 的组成与工作机制</h4><p>分词器是专门处理分词的组件，Analyzer 由三部分组成</p>
+<ul>
+<li>Character Filters（针对原始文本处理，例如去除 html）/ Tokenizer(按规则切分单词)/Token Filter (将切分的单词进行加工，小写，删除 stopwords，增加同义词) </li>
+</ul>
+<p><img src="../image/Analyzer.PNG" alt="图片"></p>
+<h4 id="Elasticsearch-内置的一些分词器"><a href="#Elasticsearch-内置的一些分词器" class="headerlink" title="Elasticsearch 内置的一些分词器"></a>Elasticsearch 内置的一些分词器</h4><h5 id="使用-analyzer-API"><a href="#使用-analyzer-API" class="headerlink" title="使用 _analyzer API"></a>使用 _analyzer API</h5><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 直接制定 Analyzer 进行测试</span></span><br><span class="line">GET /_analyze</span><br><span class="line">&#123;</span><br><span class="line">    <span class="string">"analyzer"</span>: <span class="string">"standard"</span>,</span><br><span class="line">    <span class="string">"text"</span>: <span class="string">"Mastering Elasticsearch, elasticsearch in Action"</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment"># 指定索引的字段进行测试</span></span><br><span class="line">POST books/_analyze</span><br><span class="line">&#123;</span><br><span class="line">    <span class="string">"field"</span>: <span class="string">"title"</span>,</span><br><span class="line">    <span class="string">"text"</span>: <span class="string">"mastering Elasticsearch"</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment"># 自定义分词进行测试</span></span><br><span class="line">POST /_analyze</span><br><span class="line">&#123;</span><br><span class="line">    <span class="string">"tokenizer"</span>: <span class="string">"standard"</span>,</span><br><span class="line">    <span class="string">"filter"</span>: [<span class="string">"lowercase"</span>],</span><br><span class="line">    <span class="string">"text"</span>: <span class="string">"Mastering Elasticsearch"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="Elasticsearch-的内置分词器"><a href="#Elasticsearch-的内置分词器" class="headerlink" title="Elasticsearch 的内置分词器"></a>Elasticsearch 的内置分词器</h5><ul>
+<li>Standard Analyzer – 默认的分词器按词接分，小写处理</li>
+<li>Simple Analyzer – 按照费字幕切分（符号被过滤），小写处理</li>
+<li>Stop Analyzer – 小写处理，停用次过滤（the，a，is）</li>
+<li>whitespace Analyzer – 按照空格切分，不转小写</li>
+<li>Keyword Analyzer – 不分词，直接将输入当做输出</li>
+<li>Patter Analyzer – 正则表达式， 默认 \w+(非字符分割)</li>
+<li>language – 提供30 多种常见语言的分词器</li>
+</ul>
+<h4 id="中文分词"><a href="#中文分词" class="headerlink" title="中文分词"></a>中文分词</h4>
+    </div>
+
+    
+    
+    
+        
+      
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+              
+                <a href="/2019/10/20/多字段特性以及Mapping中配置自定义Analyzer/" rel="next" title="">
+                  <i class="fa fa-chevron-left"></i> 
+                </a>
+              
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+              
+                <a href="/2019/10/20/显式Mapping设置和常用参数介绍/" rel="prev" title="">
+                   <i class="fa fa-chevron-right"></i>
+                </a>
+              
+            </div>
+          </div>
+        
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+        
+        
+        
+        
+      
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#分词"><span class="nav-number">1.</span> <span class="nav-text">分词</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#什么是分词"><span class="nav-number">1.1.</span> <span class="nav-text">什么是分词</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Analysis-与-Analyzer"><span class="nav-number">1.1.1.</span> <span class="nav-text">Analysis 与 Analyzer</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Analyzer-的组成与工作机制"><span class="nav-number">1.2.</span> <span class="nav-text">Analyzer 的组成与工作机制</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Elasticsearch-内置的一些分词器"><span class="nav-number">1.3.</span> <span class="nav-text">Elasticsearch 内置的一些分词器</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#使用-analyzer-API"><span class="nav-number">1.3.1.</span> <span class="nav-text">使用 _analyzer API</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Elasticsearch-的内置分词器"><span class="nav-number">1.3.2.</span> <span class="nav-text">Elasticsearch 的内置分词器</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#中文分词"><span class="nav-number">1.4.</span> <span class="nav-text">中文分词</span></a></li></ol></li></ol></div>
+        
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Rocky</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        
+          <a href="/archives">
+        
+          <span class="site-state-item-count">12</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+    
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+<div class="copyright">
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Rocky</span>
+</div>
+
+<div class="powered-by">
+<i class="fa fa-user-md"></i><span id="busuanzi_container_site_uv">
+  本站访客数:<span id="busuanzi_value_site_uv"></span>
+</span>
+</div>
+
+<span class="post-meta-divider">|</span>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.9.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">
+      
+    Theme – <a href="https://pisces.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> v7.4.1
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js?v=3.1.0"></script>
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+<script src="/js/utils.js?v=7.4.1"></script><script src="/js/motion.js?v=7.4.1"></script>
+<script src="/js/schemes/pisces.js?v=7.4.1"></script>
+<script src="/js/next-boot.js?v=7.4.1"></script>
+
+
+
+  
+  <script>
+    (function(){
+      var bp = document.createElement('script');
+      var curProtocol = window.location.protocol.split(':')[0];
+      bp.src = (curProtocol === 'https') ? 'https://zz.bdstatic.com/linksubmit/push.js' : 'http://push.zhanzhang.baidu.com/push.js';
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(bp, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>
